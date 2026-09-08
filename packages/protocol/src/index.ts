@@ -1,4 +1,5 @@
 import { z } from 'zod';
+export * from './file';
 
 export const MAX_SIGNAL_BYTES = 32 * 1024;
 export const codeSchema = z.string().regex(/^[A-HJ-NP-Z2-9]{6}$/);
