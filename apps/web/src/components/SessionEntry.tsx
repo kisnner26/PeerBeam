@@ -1,3 +1,4 @@
+import { usePreferences } from '../preferences/Preferences';
 import { useState } from 'react';
 import { normalizeCode } from '@peerbeam/shared';
 
@@ -10,47 +11,50 @@ export function SessionEntry({
   onJoin: (code: string) => void;
   busy: boolean;
 }) {
+  const { t } = usePreferences();
+
   const [mode, setMode] = useState<'create' | 'join'>('create');
   const [code, setCode] = useState('');
   return (
-    <section className="session-panel" aria-label="Connect devices">
+    <section className="session-panel" aria-label={t('Connect devices')}>
       <div className="tabs">
         <button
           aria-pressed={mode === 'create'}
           onClick={() => setMode('create')}
           disabled={busy}
         >
-          Create session
+          {t('Create session')}
         </button>
         <button
           aria-pressed={mode === 'join'}
           onClick={() => setMode('join')}
           disabled={busy}
         >
-          Join session
+          {t('Join session')}
         </button>
       </div>
       {mode === 'create' ? (
         <div className="entry-body">
           <div className="icon-tile">↗</div>
           <h2>
-            A small code.
-            <br />A direct connection.
+            {t('A small code.')} <br />
+            {t('A direct connection.')}
           </h2>
           <p>
-            Create a private session, then share its code with your other
-            device.
+            {t(
+              'Create a private session, then share its code with your other device.',
+            )}
           </p>
           <button
             className="button primary full"
             onClick={onCreate}
             disabled={busy}
           >
-            {busy ? 'Connecting…' : 'Create session'}{' '}
+            {busy ? t('Connecting…') : t('Create session')}{' '}
             <span aria-hidden="true">↗</span>
           </button>
           <p className="fine-print">
-            No account. No installation. Just two devices.
+            {t('No account. No installation. Just two devices.')}
           </p>
         </div>
       ) : (
@@ -63,13 +67,14 @@ export function SessionEntry({
         >
           <div className="icon-tile">↙</div>
           <h2>
-            Your other device
-            <br />
-            is one code away.
+            {t('Your other device')} <br />
+            {t('is one code away.')}
           </h2>
-          <p>Enter the code shown on the device that created the session.</p>
+          <p>
+            {t('Enter the code shown on the device that created the session.')}
+          </p>
           <label className="field-label" htmlFor="session-code">
-            Enter session code
+            {t('Enter session code')}
           </label>
           <input
             id="session-code"
@@ -88,7 +93,8 @@ export function SessionEntry({
             className="button primary full"
             disabled={busy || code.length !== 6}
           >
-            {busy ? 'Connecting…' : 'Connect'} <span aria-hidden="true">↗</span>
+            {busy ? t('Connecting…') : t('Connect')}{' '}
+            <span aria-hidden="true">↗</span>
           </button>
         </form>
       )}

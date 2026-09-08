@@ -1,3 +1,4 @@
+import { usePreferences } from '../preferences/Preferences';
 import type { ConnectionDetails } from '../connection/PeerConnectionManager';
 import { formatBytes, type TransferSnapshot } from '../transfer/state';
 
@@ -8,34 +9,38 @@ export function Diagnostics({
   details: ConnectionDetails;
   transfer?: TransferSnapshot;
 }) {
+  const { t, language } = usePreferences();
+
   const rows = [
-    ['ICE state', details.ice],
-    ['Peer connection', details.peer],
-    ['Data channel', details.channel],
-    ['Local candidate', details.localCandidate],
-    ['Remote candidate', details.remoteCandidate],
-    ['Connection type', details.connectionType],
+    [t('ICE state'), details.ice],
+    [t('Peer connection'), details.peer],
+    [t('Data channel'), details.channel],
+    [t('Local candidate'), details.localCandidate],
+    [t('Remote candidate'), details.remoteCandidate],
+    [t('Connection type'), details.connectionType],
     [
-      'Bytes sent',
+      t('Bytes sent'),
       details.bytesSent === null
-        ? 'Unavailable'
-        : `${details.bytesSent.toLocaleString()} B`,
+        ? t('Unavailable')
+        : `${details.bytesSent.toLocaleString(language)} B`,
     ],
     [
-      'Bytes received',
+      t('Bytes received'),
       details.bytesReceived === null
-        ? 'Unavailable'
-        : `${details.bytesReceived.toLocaleString()} B`,
+        ? t('Unavailable')
+        : `${details.bytesReceived.toLocaleString(language)} B`,
     ],
     [
-      'Transfer speed',
-      transfer?.speed ? `${formatBytes(transfer.speed)}/s avg` : 'Unavailable',
+      t('Transfer speed'),
+      transfer?.speed
+        ? `${formatBytes(transfer.speed)}/s ${t('avg')}`
+        : t('Unavailable'),
     ],
     [
-      'Chunks',
+      t('Chunks'),
       transfer
         ? `${transfer.chunks} / ${transfer.file.totalChunks}`
-        : 'Unavailable',
+        : t('Unavailable'),
     ],
   ];
   return (
@@ -45,22 +50,23 @@ export function Diagnostics({
           <span aria-hidden="true" className="code-symbol">
             ⌘
           </span>{' '}
-          Connection details
+          {t('Connection details')}
         </span>
         <span className="eyebrow">
-          Developer mode <span aria-hidden="true">＋</span>
+          {t('Developer mode')}
+          <span aria-hidden="true">＋</span>
         </span>
       </summary>
       <p className="fine-print">
-        Live WebRTC states and getStats() values. Missing metrics are marked
-        unavailable. Byte counters include data channel control messages;
-        progress counts file payload only.
+        {t(
+          'Live WebRTC states and getStats() values. Missing metrics are marked unavailable. Byte counters include data channel control messages; progress counts file payload only.',
+        )}
       </p>
       <dl>
         {rows.map(([label, value]) => (
           <div key={label}>
             <dt>{label}</dt>
-            <dd>{value}</dd>
+            <dd>{t(value ?? '')}</dd>
           </div>
         ))}
       </dl>

@@ -19,6 +19,7 @@ This v0.1 is intentionally understandable: no accounts, database, file server, o
 - Payload progress, average speed, chunk counts, cancellation, and receiver acknowledgement.
 - Download-only received files; no embedded content previews.
 - Collapsible ICE, PeerConnection, DataChannel, candidate, and byte diagnostics.
+- English/Spanish language selection and day/night themes, remembered locally. Changing either keeps the current session and transfer intact. WebRTC state names remain raw technical values for inspection.
 - Strict TypeScript, Zod protocols, automated tests, and CI.
 
 ## How it works

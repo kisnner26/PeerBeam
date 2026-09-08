@@ -768,3 +768,221 @@ footer > span:last-child {
     transition: none !important;
   }
 }
+
+.header-actions,
+.preference-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.header-actions {
+  gap: 24px;
+}
+.preference-controls select,
+.theme-toggle {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid #444450;
+  border-radius: 8px;
+  background: #18181b;
+  color: #e1e1eb;
+  font: inherit;
+  font-size: 12px;
+}
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+.theme-toggle span {
+  font-size: 19px;
+  line-height: 1;
+}
+.hero-grid > *,
+.workspace {
+  min-width: 0;
+}
+:root:lang(es) h1 {
+  font-size: clamp(42px, 4.4vw, 60px);
+  letter-spacing: -2.5px;
+}
+.entry-body h2 br::after {
+  content: ' ';
+}
+
+:root[data-theme='light'] {
+  color: #222235;
+  background: #f5f5fa;
+  color-scheme: light;
+}
+[data-theme='light'] :is(.site-header, footer, .incoming, .transfer-card) {
+  border-color: #d8d8e5;
+}
+[data-theme='light']
+  :is(
+    .header-note,
+    .eyebrow,
+    .intro-tag,
+    .hero-description,
+    .device span,
+    .beam-caption,
+    .architecture-note,
+    .workspace-status,
+    .session-label,
+    .entry-body > p,
+    .fine-print,
+    .privacy-caption,
+    .privacy-caption > span,
+    .waiting p,
+    .drop-zone > p,
+    .muted,
+    .progress-labels,
+    .diagnostics dt,
+    .principles p,
+    footer,
+    footer > span:last-child,
+    .version
+  ) {
+  color: #5c5c73;
+}
+[data-theme='light']
+  :is(.tagline, .field-label, .principles h3, .diagnostics summary) {
+  color: #30304b;
+}
+[data-theme='light']
+  :is(
+    .logo,
+    h1 > span,
+    .beam-label,
+    .beam-track,
+    .icon-tile,
+    .upload-icon,
+    .file-glyph,
+    .text-button,
+    .share-code strong,
+    .diagnostics dd,
+    .principle-number,
+    .code-symbol
+  ) {
+  color: #5145b9;
+}
+[data-theme='light'] .session-panel {
+  border-color: #d5d5e7;
+  background: linear-gradient(135deg, #ffffff, #f0effa);
+  box-shadow: 0 16px 55px #28234d0b;
+}
+[data-theme='light'] .tabs {
+  border-color: #ddddeb;
+  background: #ededf6;
+}
+[data-theme='light'] .tabs button {
+  color: #5c5c73;
+}
+[data-theme='light'] .tabs button[aria-pressed='true'] {
+  color: #423595;
+  border-color: #ccc5ef;
+  background: #fff;
+}
+[data-theme='light'] .tabs button:hover {
+  color: #222235;
+}
+[data-theme='light'] .icon-tile {
+  border-color: #ccc5ef;
+  background: #eae7fb;
+}
+[data-theme='light'] .primary {
+  color: #fff;
+  border-color: #6559d5;
+  background: #5145c4;
+}
+[data-theme='light'] .primary:hover:not(:disabled) {
+  background: #4338a5;
+}
+[data-theme='light']
+  :is(.secondary, .preference-controls select, .theme-toggle) {
+  color: #35354f;
+  background: #fff;
+  border-color: #bdbdce;
+}
+[data-theme='light'] :is(.secondary:hover:not(:disabled), .theme-toggle:hover) {
+  background: #eae7fb;
+}
+[data-theme='light'] .code-input {
+  background: #fff;
+  border-color: #bdbdce;
+}
+[data-theme='light'] .code-input::placeholder {
+  color: #75758a;
+}
+[data-theme='light'] .error-banner {
+  background: #fff0f2;
+  color: #92213b;
+  border-color: #dc9eac;
+}
+[data-theme='light'] .drop-zone {
+  border-color: #9e95c7;
+  background: #ffffff60;
+}
+[data-theme='light'] .drop-zone.dragging {
+  background: #e7e1fa;
+  border-color: #6655b8;
+}
+[data-theme='light'] .progress-track {
+  background: #dcd9ee;
+}
+[data-theme='light'] .diagnostics {
+  background: #fff;
+  border-color: #d5d5e7;
+}
+[data-theme='light'] .cyan {
+  color: #0e7490;
+}
+[data-theme='light'] .status-dot.live {
+  background: #0e7490;
+}
+[data-theme='light'] .device svg {
+  stroke: #68687f;
+}
+[data-theme='light'] .device.other svg {
+  stroke: #6253bd;
+}
+[data-theme='light'] .version {
+  border-color: #cccbdc;
+}
+
+@media (max-width: 1000px) {
+  .header-actions .header-note {
+    display: none;
+  }
+}
+@media (max-width: 680px) {
+  .site-header {
+    height: auto;
+    min-height: 92px;
+    padding: 18px 0;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .header-actions {
+    margin-left: auto;
+  }
+  .preference-controls {
+    gap: 7px;
+  }
+  .preference-controls select,
+  .theme-toggle {
+    font-size: 11px;
+    padding: 8px;
+  }
+  :root:lang(es) h1 {
+    font-size: clamp(39px, 9.8vw, 58px);
+    letter-spacing: -2px;
+  }
+  .intro-tag {
+    line-height: 1.6;
+  }
+  .diagnostics summary {
+    flex-wrap: wrap;
+  }
+}

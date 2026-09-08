@@ -1,3 +1,4 @@
+import { usePreferences } from '../preferences/Preferences';
 import { useEffect, useRef } from 'react';
 import {
   formatBytes,
@@ -15,6 +16,8 @@ export function IncomingFile({
   onAccept: () => void;
   onReject: () => void;
 }) {
+  const { t } = usePreferences();
+
   const accept = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const previous = document.activeElement;
@@ -30,18 +33,18 @@ export function IncomingFile({
       role="region"
       aria-labelledby="incoming-heading"
     >
-      <span className="eyebrow cyan">Permission required</span>
-      <h3 id="incoming-heading">Incoming file</h3>
+      <span className="eyebrow cyan">{t('Permission required')}</span>
+      <h3 id="incoming-heading">{t('Incoming file')}</h3>
       <p className="filename">{transfer.file.name}</p>
       <p className="muted">
-        {formatBytes(transfer.file.size)} · Only accept files you expect.
+        {formatBytes(transfer.file.size)} {t('· Only accept files you expect.')}
       </p>
       <div className="button-row">
         <button ref={accept} className="button primary" onClick={onAccept}>
-          Accept
+          {t('Accept')}
         </button>
         <button className="button secondary" onClick={onReject}>
-          Reject
+          {t('Reject')}
         </button>
       </div>
     </section>
@@ -54,24 +57,26 @@ export function TransferCard({
   transfer: TransferSnapshot;
   onCancel: () => void;
 }) {
+  const { t } = usePreferences();
+
   const percent = progress(transfer.bytes, transfer.file.size);
   const labels = {
-    offered: 'Waiting for acceptance',
-    accepted: 'Preparing transfer',
+    offered: t('Waiting for acceptance'),
+    accepted: t('Preparing transfer'),
     transferring:
-      transfer.direction === 'send' ? 'Sending file' : 'Receiving file',
-    'awaiting-ack': 'Waiting for receiver confirmation',
-    complete: 'Transfer complete',
-    rejected: 'File rejected',
-    cancelled: 'Transfer cancelled',
-    error: 'Transfer interrupted',
+      transfer.direction === 'send' ? t('Sending file') : t('Receiving file'),
+    'awaiting-ack': t('Waiting for receiver confirmation'),
+    complete: t('Transfer complete'),
+    rejected: t('File rejected'),
+    cancelled: t('Transfer cancelled'),
+    error: t('Transfer interrupted'),
   };
   return (
-    <section className="transfer-card" aria-label="File transfer">
+    <section className="transfer-card" aria-label={t('File transfer')}>
       <div className="transfer-top">
         <div>
           <span className="eyebrow">
-            {transfer.direction === 'send' ? 'Outgoing' : 'Incoming'}
+            {transfer.direction === 'send' ? t('Outgoing') : t('Incoming')}
           </span>
           <h3 className="filename">{transfer.file.name}</h3>
         </div>
@@ -89,7 +94,7 @@ export function TransferCard({
       <div
         className="progress-track"
         role="progressbar"
-        aria-label="Transfer progress"
+        aria-label={t('Transfer progress')}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(percent)}
@@ -104,14 +109,14 @@ export function TransferCard({
       </div>
       <p className="fine-print">
         {transfer.speed > 0
-          ? `${formatBytes(transfer.speed)}/s average`
-          : 'Speed unavailable'}{' '}
-        · {transfer.chunks} / {transfer.file.totalChunks} chunks
+          ? `${formatBytes(transfer.speed)}/s ${t('average')}`
+          : t('Speed unavailable')}{' '}
+        · {transfer.chunks} / {transfer.file.totalChunks} {t('chunks')}
       </p>
-      {transfer.error && <p role="alert">{transfer.error}</p>}
+      {transfer.error && <p role="alert">{t(transfer.error)}</p>}
       {isActive(transfer.status) && (
         <button className="text-button" onClick={onCancel}>
-          Cancel transfer
+          {t('Cancel transfer')}
         </button>
       )}
       {transfer.downloadUrl && (
@@ -120,7 +125,8 @@ export function TransferCard({
           href={transfer.downloadUrl}
           download={transfer.file.name}
         >
-          Download file <span aria-hidden="true">↓</span>
+          {t('Download file')}
+          <span aria-hidden="true">↓</span>
         </a>
       )}
     </section>

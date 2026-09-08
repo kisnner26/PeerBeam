@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- English/Spanish interface, including consent, progress, errors and diagnostic labels.
+- Day/night themes with persistent preferences and accessible header controls.
+
 ## 0.1.0 — 2026-09-08
 
 ### Added
