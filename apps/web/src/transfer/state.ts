@@ -43,13 +43,9 @@ export function formatBytes(bytes: number): string {
 }
 export function safeFilename(name: string): string {
   // Control and bidi characters are deliberately stripped from untrusted names.
-  // eslint-disable-next-line no-control-regex
   return (
     name
-      .replace(
-        /[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069/\\:*?"<>|]/g,
-        '_',
-      )
+      .replace(/[\p{Cc}\u202a-\u202e\u2066-\u2069/\\:*?"<>|]/gu, '_')
       .replace(/^\.+/, '_')
       .slice(0, 255) || 'download'
   );
