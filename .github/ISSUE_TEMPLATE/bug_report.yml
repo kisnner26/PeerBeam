@@ -1,0 +1,22 @@
+name: Bug report
+description: Report a reproducible PeerBeam problem using synthetic files.
+labels: [bug]
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Include version, browser/OS on both peers, network setup and synthetic file size. Never attach private files, SDP, IPs or live codes.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Connection details and errors
+      description: Share state names and candidate types, not personal network addresses. Security vulnerabilities belong in a private report.
