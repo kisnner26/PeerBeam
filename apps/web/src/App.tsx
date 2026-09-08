@@ -42,6 +42,15 @@ export function App() {
     }
     files.offer(list[0]!);
   }
+  async function copyCode() {
+    try {
+      await navigator.clipboard.writeText(session.code);
+      setCopied(true);
+      setLocalError('');
+    } catch {
+      setLocalError('Could not copy. Select and copy the code manually.');
+    }
+  }
   return (
     <div className="app-shell">
       <header className="site-header">
@@ -150,14 +159,7 @@ export function App() {
                   <button
                     className="button secondary"
                     onClick={() => {
-                      void navigator.clipboard
-                        .writeText(session.code)
-                        .then(() => setCopied(true))
-                        .catch(() =>
-                          setLocalError(
-                            'Could not copy. Select and copy the code manually.',
-                          ),
-                        );
+                      void copyCode();
                     }}
                   >
                     {copied ? 'Copied ✓' : 'Copy code'}

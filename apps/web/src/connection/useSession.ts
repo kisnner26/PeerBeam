@@ -63,6 +63,12 @@ export function useSession() {
       teardown();
       setChannel(undefined);
       setError(message);
+      setDetails({
+        ...emptyDetails,
+        ice: 'closed',
+        peer: 'closed',
+        channel: 'closed',
+      });
       setStatus('error');
     };
     let queue = Promise.resolve();
@@ -85,7 +91,10 @@ export function useSession() {
         case 'peer-ready': {
           setStatus('negotiating');
           const peer = new PeerConnectionManager(
-            (signal) => signalRef.current?.send(signal),
+            (signal) => {
+              if (generation.current === current)
+                signalRef.current?.send(signal);
+            },
             (opened) => {
               if (generation.current === current) {
                 setChannel(opened);
