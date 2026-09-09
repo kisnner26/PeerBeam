@@ -177,6 +177,8 @@ export const spanish: Record<string, string> = {
   'Invalid transfer data. The connection was closed.':
     'Datos de transferencia no válidos. La conexión se cerró.',
   'Transfer interrupted.': 'Transferencia interrumpida.',
+  'Transfer interrupted: data could not be sent.':
+    'Transferencia interrumpida: no se pudieron enviar los datos.',
   'The other device reported a transfer error.':
     'El otro dispositivo informó un error de transferencia.',
   'Source file unavailable.': 'El archivo de origen no está disponible.',

@@ -101,13 +101,11 @@ for (const stopSignaling of [false, true]) {
         const input = Buffer.from(
           Uint8Array.from({ length: 2 * 1024 * 1024 }, (_, i) => i % 251),
         );
-        await a
-          .getByLabel('Choose file', { exact: true })
-          .setInputFiles({
-            name: 'synthetic.bin',
-            mimeType: 'application/octet-stream',
-            buffer: input,
-          });
+        await a.getByLabel('Choose file', { exact: true }).setInputFiles({
+          name: 'synthetic.bin',
+          mimeType: 'application/octet-stream',
+          buffer: input,
+        });
         const incoming = b.getByRole('region', { name: 'Incoming file' });
         await expect(incoming).toContainText('synthetic.bin');
         await expect(incoming).toContainText('2.0 MiB');
@@ -134,11 +132,9 @@ for (const stopSignaling of [false, true]) {
           signaling = undefined;
           for (const page of [a, b])
             await expect(
-              page
-                .getByRole('status')
-                .filter({
-                  hasText: 'Your established P2P connection continues.',
-                }),
+              page.getByRole('status').filter({
+                hasText: 'Your established P2P connection continues.',
+              }),
             ).toBeVisible();
           releaseRead!();
         }
