@@ -1,22 +1,73 @@
 name: Bug report
-description: Report a reproducible PeerBeam problem using synthetic files.
+description: Report a reproducible PeerBeam problem using synthetic files
+title: '[Bug]: '
 labels: [bug]
 body:
-  - type: textarea
-    id: behavior
+  - type: markdown
     attributes:
-      label: Expected and actual behavior
+      value: Security vulnerabilities must be reported privately using SECURITY.md. Never post private files, live codes, SDP, ICE addresses, or other sensitive information.
+  - type: input
+    id: version
+    attributes:
+      label: PeerBeam version or commit
+      placeholder: v0.1 or commit SHA
+    validations:
+      required: true
+  - type: input
+    id: browsers
+    attributes:
+      label: Browsers
+      description: Include browser names and versions for both peers when relevant.
+    validations:
+      required: true
+  - type: input
+    id: operating-systems
+    attributes:
+      label: Operating systems
+      description: Include the OS for both peers when relevant.
     validations:
       required: true
   - type: textarea
     id: reproduction
     attributes:
       label: Steps to reproduce
-      description: Include version, browser/OS on both peers, network setup and synthetic file size. Never attach private files, SDP, IPs or live codes.
+      description: Use synthetic files and include the network setup when connection behavior is involved.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - File transfer
+        - Peer connection
+        - Signaling/session
+        - User interface
+        - Development/tooling
+        - Other
     validations:
       required: true
   - type: textarea
     id: diagnostics
     attributes:
-      label: Connection details and errors
-      description: Share state names and candidate types, not personal network addresses. Security vulnerabilities belong in a private report.
+      label: Logs and diagnostics
+      description: Share sanitized errors, state names, and candidate types. Remove IPs, SDP, codes, filenames, and personal data.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy confirmation
+      options:
+        - label: I have not included private files, active session codes, SDP/ICE addresses, credentials, or sensitive information.
+          required: true

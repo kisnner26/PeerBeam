@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Professional OSS onboarding, contribution templates, and a public issue roadmap.
+
 - Established P2P sessions survive signaling loss with a nonfatal warning.
 - Eight-character session codes and a five-failed-join/60-second connection budget; six-character clients require a coordinated update.
 - Configurable waiting/absolute lifetimes, bounded idle sockets and capacity checks before WebSocket admission.

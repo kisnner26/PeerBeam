@@ -1,6 +1,6 @@
 # Initial issue proposals
 
-These are future contribution opportunities, not implemented features or issues already posted to GitHub. Labels can overlap. Keep each PR focused and discuss protocol changes first.
+This is the historical idea backlog prepared with v0.1. The current public roadmap lives in [GitHub Issues](https://github.com/hoowertsg19/PeerBeam/issues); some proposals below have now been promoted there and the public issue is authoritative. Labels can overlap. Keep each PR focused and discuss protocol changes first.
 
 ## good first issue
 
@@ -19,12 +19,14 @@ These are future contribution opportunities, not implemented features or issues 
 ## feature
 
 9. **QR session invitations (v0.2).** Encode the app origin and code, with a visible text alternative and explicit join action.
-10. **Multiple-file queue (v0.2).** Specify consent per file, queue cancellation and memory limits before implementation.
+10. **[Multiple-file queue (v0.2)](https://github.com/hoowertsg19/PeerBeam/issues/4).** Specify consent per file, queue cancellation and memory limits before implementation.
 11. **Drag-and-drop improvements (v0.2).** Handle nested drag targets without flicker and explain unsupported directory drops.
-12. **SHA-256 verification (v0.3).** Define digest framing, asynchronous computation, mismatch UX and large-file memory costs.
-13. **Resumable transfers (v0.3).** Design identity, chunk tracking and reconnect trust boundaries; do not assume files persist.
+12. **[SHA-256 verification (v0.3)](https://github.com/hoowertsg19/PeerBeam/issues/3).** Define digest framing, asynchronous computation, mismatch UX and large-file memory costs.
+13. **[Resumable transfers (v0.3)](https://github.com/hoowertsg19/PeerBeam/issues/5).** Design identity, chunk tracking and reconnect trust boundaries; do not assume files persist.
 14. **Streaming-to-disk adapter (v0.4).** Explore File System Access support with a documented fallback.
-15. **Configurable TURN (v0.5).** Define secure credential provisioning and relay diagnostics before adding configuration.
+15. **[Configurable TURN (v0.5)](https://github.com/hoowertsg19/PeerBeam/issues/2).** Define secure credential provisioning and relay diagnostics before adding configuration.
+
+Additional published contributor work includes [Firefox E2E coverage](https://github.com/hoowertsg19/PeerBeam/issues/6) and a [Docker-based development workflow](https://github.com/hoowertsg19/PeerBeam/issues/7).
 
 ## testing
 

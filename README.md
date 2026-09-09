@@ -1,157 +1,116 @@
 # PeerBeam
 
-**P2P file transfer you can actually inspect.**
+**Inspectable browser-to-browser file transfers over WebRTC.**
 
-> Screenshot placeholder — run the app to explore the dark, responsive transfer interface.
+[![CI](https://github.com/hoowertsg19/PeerBeam/actions/workflows/ci.yml/badge.svg)](https://github.com/hoowertsg19/PeerBeam/actions/workflows/ci.yml)
+[![MIT License](https://img.shields.io/github/license/hoowertsg19/PeerBeam)](LICENSE)
+[![Node.js 22.14+](https://img.shields.io/badge/Node.js-22.14%2B-339933?logo=node.js&logoColor=white)](package.json)
 
-## What is PeerBeam?
+PeerBeam sends one file directly between two browsers. A small WebSocket server introduces the peers and relays SDP/ICE; file metadata and bytes use an ordered, reliable WebRTC DataChannel.
 
-PeerBeam is a small, open source browser application for sending one file between two devices over a WebRTC DataChannel. Create a session, share a eight-character code, connect, and ask the recipient to accept the file. Expand **Connection details** to inspect the actual connection.
+## Why PeerBeam?
 
-This v0.1 is intentionally understandable: no accounts, database, file server, or cloud dependency. It is not an anonymity tool. It uses WebRTC's DTLS transport encryption, not custom end-to-end encryption.
+PeerBeam keeps its control plane separate from its data plane. It requires no accounts, asks the receiver for explicit consent, and exposes live ICE, PeerConnection, DataChannel, candidate, and byte diagnostics. The codebase is deliberately small enough to inspect: React and TypeScript in the browser, Node.js and WebSocket for signaling, and strict Zod schemas at protocol boundaries.
+
+It does not provide anonymity, verified peer identity, custom end-to-end encryption, or universal network reachability.
+
+## logo
+
+![PeerBeam logo](docs/assets/peerbeam-logo.png)
 
 ## Features
 
-- Cryptographically random, temporary session codes; at most two peers.
-- Explicit acceptance or rejection before reading and sending file contents.
-- One active file, up to **128 MiB**, in either direction.
-- Progressive reads, configurable 64 KiB chunks, negotiated message-size limits, and backpressure.
-- Payload progress, average speed, chunk counts, cancellation, and receiver acknowledgement.
-- Download-only received files; no embedded content previews.
-- Collapsible ICE, PeerConnection, DataChannel, candidate, and byte diagnostics.
-- English/Spanish language selection and day/night themes, remembered locally. Changing either keeps the current session and transfer intact. WebRTC state names remain raw technical values for inspection.
-- Strict TypeScript, Zod protocols, automated tests, and CI.
+- Direct WebRTC file transfer between two browsers, with explicit receiver consent.
+- One active file up to 128 MiB, read progressively in bounded chunks.
+- Backpressure, progress, average speed, cancellation, and receiver acknowledgement.
+- Download-only reception with sanitized filenames and no automatic previews.
+- Visible connection diagnostics and nonfatal signaling loss after the P2P channel opens.
+- English/Spanish language selection and persistent day/night themes.
+- Temporary eight-character session invitations with bounded lifetime and join attempts.
 
 ## How it works
 
-```text
-Device A
-   |
-WebSocket (session, SDP, ICE)
-   |
-Signaling Server (temporary in-memory sessions)
-   |
-WebSocket (session, SDP, ICE)
-   |
-Device B
-
-After negotiation:
-Device A ========== WebRTC DataChannel / DTLS ========== Device B
-                   file metadata + file chunks
+```mermaid
+flowchart LR
+    A[Browser A] <-->|Session, SDP, ICE| S[Signaling server]
+    S <-->|Session, SDP, ICE| B[Browser B]
+    A ==>|File metadata and bytes<br/>WebRTC DataChannel / DTLS| B
 ```
 
-**Files do not pass through the signaling server.** The browser's `TransferManager` sends metadata and binary chunks over an ordered, reliable DataChannel. The server only pairs peers and relays validated SDP and ICE. Optional STUN discovers network addresses; it does not relay files. v0.1 has no TURN configuration or relay fallback.
+1. Browser A creates a temporary session code; Browser B joins it.
+2. The signaling server relays validated session, SDP, and ICE messages.
+3. The browsers establish a WebRTC DataChannel. Signaling may then disappear without ending that established channel.
+4. A file offer shows its name and size; no payload is read or sent until Browser B accepts.
+5. Browser A sends chunks directly to Browser B, which validates them, creates a download, and acknowledges completion.
 
-1. Create a code on device A and enter it on device B.
-2. The creator offers a WebRTC connection; B answers. Both exchange ICE candidates.
-3. Choose or drop a file. B sees its name and size and must accept.
-4. A sends alternating `chunk-meta` JSON messages and binary chunks.
-5. B validates sequence and lengths, assembles a Blob, and acknowledges completion.
-6. B downloads the file. Download it before leaving, reloading, or starting another transfer: those actions release the previous Blob.
+The signaling server has no file-message endpoint and receives no file metadata or payload through the PeerBeam protocol. Optional STUN discovers network addresses; v0.1 has no TURN relay fallback.
+
+## Quick start
+
+Prerequisites: Node.js **22.14 or newer**, npm, and a current browser with WebRTC support.
+
+```sh
+git clone https://github.com/hoowertsg19/PeerBeam.git
+cd PeerBeam
+npm ci
+npm run dev
+```
+
+`npm run dev` starts both services:
+
+- Web app: <http://localhost:5173>
+- Signaling: `ws://127.0.0.1:8080`
+
+No `.env` file is required for local use. To change ports, origins, signaling, STUN, or session lifetimes, copy `.env.example` to `.env` at the repository root and restart the processes. `VITE_` values are public and embedded in the browser build.
+
+Open the web app in two browser contexts. Choose **Create session** in one, choose **Join session** in the other, enter the eight-character code, and wait for both to show **Peer connected**.
+
+For two physical devices, use trusted HTTPS/WSS and reachable addresses; `localhost` on a phone refers to the phone. Some NAT and enterprise networks cannot connect without TURN.
+
+## Testing
+
+```sh
+npm run lint          # ESLint
+npm run format:check  # Prettier verification
+npm run typecheck     # TypeScript strict checking
+npm run test          # Unit and integration tests
+npm run build         # Production builds
+npx playwright install chromium
+npm run test:e2e      # Two real Chromium contexts and WebRTC DataChannel
+```
+
+The E2E suite transfers a synthetic file, compares the downloaded bytes exactly, and verifies that an active transfer survives signaling shutdown. See [the validation guide](docs/TESTING.md).
 
 ## Architecture
 
 ```text
-peerbeam/
-├── apps/
-│   ├── web/src/
-│   │   ├── components/    # Session, consent, progress, diagnostics
-│   │   ├── connection/    # SignalingClient, PeerConnectionManager, React hook
-│   │   └── transfer/      # State machine, chunking, backpressure, React hook
-│   └── signaling-server/src/  # WebSocket transport and SessionManager
-├── packages/
-│   ├── protocol/src/      # Strict Zod schemas and inferred message types
-│   └── shared/src/        # Code alphabet, length, normalization
-├── docs/                  # Protocol, validation, initial issues, ADR
-└── .github/               # CI and contribution templates
+apps/web/                  React/Vite UI, connection manager, transfer state machine
+apps/signaling-server/     Temporary sessions and validated SDP/ICE relay
+packages/protocol/         Strict Zod wire schemas and inferred types
+packages/shared/           Shared session-code rules
+e2e/                       Real-browser Playwright coverage
 ```
 
-React state is sufficient; there is no global state library. Workspace packages export TypeScript source for Vite, Vitest, and the server bundler. The production server bundles internal workspace code and imports its declared runtime dependencies. No workspace package needs a separate build.
+Read [the architecture decision](docs/adr/0001-peer-to-peer-architecture.md) and [protocol specification](docs/PROTOCOL.md) before changing transport behavior.
 
-See [the architecture decision](docs/adr/0001-peer-to-peer-architecture.md) and [protocol specification](docs/PROTOCOL.md).
+## Security & privacy
 
-## Getting started
+WebRTC DataChannels use browser-provided DTLS encryption. The signaling operator still sees connection IPs, session membership, codes, SDP, and ICE network metadata. Origin checks are browser policy, not authentication, and anyone with a live code can join first. Share codes privately and accept only expected files.
 
-Requirements: **Node.js 22.14 or newer**, npm, and a modern browser with WebRTC. Use a current Node 22 LTS patch for development and CI.
+Current server controls include 32 KiB signaling messages, five failed joins per connection per 60 seconds, 500 sessions, 1,000 sockets, a 10-minute waiting lifetime, and a 60-minute absolute session/socket lifetime. These limits mitigate basic abuse; they do not provide DDoS protection. Read [SECURITY.md](SECURITY.md) for the complete trust model and private reporting guidance.
 
-After cloning this repository:
+## Project status
 
-```sh
-cd peerbeam
-npm install
-npm run dev
-```
-
-Open [localhost:5173](http://localhost:5173) in two browser windows. Create a session in one and join with its code in the other. The signaling server listens on `127.0.0.1:8080`. No environment file is required for local use.
-
-For reproducible installs after cloning, use `npm ci` instead of `npm install`. Stop both development processes with Ctrl+C.
-
-### Environment
-
-Copy `.env.example` to `.env` **at the repository root** when changing configuration. On PowerShell use `Copy-Item .env.example .env`; on a POSIX shell use `cp .env.example .env`.
-
-| Variable             | Default without .env                                | Purpose                                                                                               |
-| -------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `PORT`               | `8080`                                              | Signaling port                                                                                        |
-| `VITE_PORT`          | `5173`                                              | Vite development port; add its origin to `ALLOWED_ORIGINS` when changing it                           |
-| `HOST`               | `127.0.0.1`                                         | Signaling listen interface                                                                            |
-| `ALLOWED_ORIGINS`    | localhost and 127.0.0.1 on port 5173                | Comma-separated browser origins. An empty value disables this check, only for controlled development. |
-| `VITE_SIGNALING_URL` | Page host on port 8080, ws/wss matching page scheme | Browser signaling address                                                                             |
-| `VITE_STUN_URL`      | Empty                                               | Optional STUN URL, for example `stun:stun.l.google.com:19302`                                         |
-| `WAITING_TTL_MS`     | `600000`                                            | Waiting session/unjoined socket limit, in milliseconds                                                |
-| `ABSOLUTE_TTL_MS`    | `3600000`                                           | Maximum session and socket lifetime, in milliseconds                                                  |
-
-`VITE_` values are public and embedded at build time. Restart Vite after editing them. There are no secrets to configure. A public STUN service is opt-in; its operator sees network-address requests.
-
-### Two physical devices
-
-Both devices need a reachable web origin and signaling address. `localhost` on a phone refers to the phone, not your computer. For secure cross-device development, serve the web app over trusted **HTTPS** and proxy signaling over **WSS**, set `VITE_SIGNALING_URL` to that reachable WSS URL, and add the exact HTTPS origin to `ALLOWED_ORIGINS`.
-
-If developing behind a local proxy, bind Vite with `npm run dev -w @peerbeam/web -- --host 0.0.0.0` and set `HOST=0.0.0.0` as needed. Run signaling separately with `npm run dev -w @peerbeam/signaling-server`. Browser secure-context requirements mean a plain HTTP LAN address is not a supported substitute for HTTPS. Firewall rules must permit the chosen endpoints. Some NATs and enterprise networks cannot connect without TURN; v0.1 reports failure rather than uploading through a server.
-
-## Development
-
-```sh
-npm run dev          # Web and signaling, concurrently
-npm run lint
-npm run format
-npm run format:check
-npm run typecheck
-npm run test
-npx playwright install chromium
-npm run test:e2e
-npm run build
-```
-
-After building, `npm start -w @peerbeam/signaling-server` runs the compiled server. `npm run preview -w @peerbeam/web -- --port 5173` previews the static app using the default allowed origin. Keep the root workspace dependencies installed for the server. Production TLS, reverse proxies and hardened public hosting are outside this release's scope.
-
-Tests cover protocol validation, sessions and expiry, actual WebSocket relay behavior, file state transitions, chunk boundaries, exact reconstructed payloads, backpressure, interruption, and React interactions. Two real Chromium E2E tests cover exact downloaded bytes and transfer continuity after signaling shutdown; see [validation guidance](docs/TESTING.md).
-
-## Security
-
-WebRTC encrypts DataChannels using DTLS. This does **not** provide anonymity or independently verified peer identity. Anyone with a live code may join first; share codes privately and accept only expected files. The signaling service and app origin must be trusted. Use HTTPS/WSS outside localhost.
-
-The server sees IP addresses, session membership, SDP and ICE network metadata. It has no file storage, binary relay, or file-offer message type. Received names are rendered as React text and sanitized for download; received content is never executed by the app. Downloaded files can still be unsafe when opened elsewhere.
-
-Server limits: 32 KiB per signaling message, 200 messages per socket per 10 seconds, 1,000 sockets, 500 sessions, and bounded outbound buffers. Five failed joins per connection exhaust a 60-second join window. Waiting sessions expire after 10 minutes; sessions and sockets have an absolute 60-minute lifetime even with responsive peers. Both TTLs are configurable. Signaling loss after DataChannel open shows a warning and preserves the established P2P transfer; actual peer/channel failure still interrupts it. These limits are not comprehensive protection against distributed abuse. See [SECURITY.md](SECURITY.md).
-
-The receiver retains the file in RAM and creates a Blob. The 128 MiB cap is not a guarantee of memory availability on every device. No hash verification, resumability, streaming to disk, or background transfer is implemented.
+PeerBeam is early **v0.1** software and is not presented as production-ready or security-audited. It supports one in-memory file at a time, up to 128 MiB. It has no content hash, resume support, folder transfer, persistence, TURN, or multi-peer sessions.
 
 ## Roadmap
 
-| Version  | Scope                                                                                                                   |
-| -------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **v0.1** | Session codes, WebRTC connection, one-file transfer, accept/reject, chunking, backpressure, progress, basic diagnostics |
-| v0.2     | QR codes, drag-and-drop improvements, accessibility, multiple files                                                     |
-| v0.3     | SHA-256 verification, resumable transfers                                                                               |
-| v0.4     | Folders, File System Access API, streaming directly to disk where supported                                             |
-| v0.5     | Docker, self-hosting, configurable TURN                                                                                 |
-| v0.6     | Multi-peer transfer, advanced WebRTC diagnostics                                                                        |
+Planned work is tracked in [GitHub Issues](https://github.com/hoowertsg19/PeerBeam/issues). Protocol and security changes should be discussed before implementation.
 
 ## Contributing
 
-Start with [CONTRIBUTING.md](CONTRIBUTING.md), the [Code of Conduct](CODE_OF_CONDUCT.md), and [initial issue proposals](docs/INITIAL_ISSUES.md). The issue document contains proposals, not remotely created GitHub issues.
+External contributions are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers setup, architecture, checks, branch and commit conventions, and pull requests. Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 
-[MIT](LICENSE) — PeerBeam contributors.
+[MIT](LICENSE) © PeerBeam contributors.

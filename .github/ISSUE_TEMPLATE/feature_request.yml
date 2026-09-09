@@ -1,17 +1,49 @@
 name: Feature request
-description: Propose a focused improvement.
+description: Propose a focused improvement to PeerBeam
+title: '[Feature]: '
 labels: [enhancement]
 body:
   - type: textarea
     id: problem
     attributes:
-      label: What problem does this solve?
+      label: Problem
+      description: What limitation or contributor/user need should be addressed?
     validations:
       required: true
   - type: textarea
     id: proposal
     attributes:
-      label: Proposed behavior and alternatives
-      description: Explain scope, tradeoffs and where this fits in the roadmap.
+      label: Proposed direction
+      description: Describe the desired behavior and its boundaries.
     validations:
       required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other approaches or workarounds did you consider?
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Expected impact
+      description: Who benefits, and what becomes possible or clearer?
+    validations:
+      required: true
+  - type: dropdown
+    id: protocol-security
+    attributes:
+      label: Protocol or security impact
+      description: Choose Yes if signaling, file framing, consent, trust boundaries, cryptography, limits, or network behavior may change.
+      options:
+        - 'No'
+        - 'Yes'
+        - Unsure
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
+      description: Add constraints, mockups, or related issues. Do not include sensitive information.
