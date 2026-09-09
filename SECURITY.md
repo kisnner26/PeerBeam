@@ -13,7 +13,7 @@ Include affected version, browser and OS, impact, minimal reproduction with synt
 ## Trust and data boundaries
 
 - DataChannels use browser-provided DTLS encryption. PeerBeam adds no custom end-to-end encryption or verified identity layer and promises no anonymity.
-- A six-character code is a temporary bearer invitation. Anyone who knows or guesses it can join first. Check the recipient through a trusted channel and accept only expected offers.
+- An eight-character code is a temporary bearer invitation. Anyone who knows or guesses it can join first. Check the recipient through a trusted channel and accept only expected offers.
 - The signaling server sees connection IPs, codes, membership, SDP and ICE. It does not receive file offers, metadata or payloads through the application protocol and stores no files. A hostile client can put arbitrary text into an allowed SDP field: protocol validation is not a proof that all submitted text is genuine SDP. The server never interprets that text as file content.
 - The web origin and signaling operator must be trusted. Use HTTPS/WSS outside localhost; untrusted signaling can redirect negotiation.
 - Optional STUN learns network addresses. TURN is not implemented. There is no fallback upload.
@@ -23,3 +23,9 @@ Include affected version, browser and OS, impact, minimal reproduction with synt
 ## Abuse controls and limits
 
 Strict Zod objects, payload limits, bounded sessions/sockets, per-socket message limits, outbound signaling buffer limits, heartbeat cleanup, session expiration, transfer timeouts, sequence checks and backpressure reduce accidental and simple malicious resource abuse. They do not prevent distributed guessing or denial of service. Origin checks protect browser use but do not authenticate non-browser clients. Hardened public hosting and multi-instance operation are future work.
+
+Codes use 32 unambiguous symbols and cryptographic randomness: eight characters provide 40 bits (1,024 times the previous six-character search space). After five failed joins per connection in a 60-second window, further joins return `rate-limited` until that window resets. Malformed join codes count as failures. Creating sessions, ping and SDP/ICE relay retain the separate 200-message/10-second limit. Reconnecting bypasses the join budget; deploy connection/request limits at a trusted reverse proxy with correctly configured client-IP handling. Do not trust arbitrary forwarded-IP headers in Node.
+
+Admission is capped at 1,000 sockets and 500 sessions. Waiting sessions expire after 10 minutes of inactivity; all sessions expire 60 minutes after creation even with two responsive peers. These are configurable with `WAITING_TTL_MS` and `ABSOLUTE_TTL_MS` (positive integer milliseconds). Socket lifetime is also bounded: unjoined sockets by the waiting TTL, all sockets by the absolute TTL. Cleanup runs every 30 seconds; expiration sends `session-expired`, removes membership and closes sockets, with a 5-second forced-close deadline. Heartbeat traffic does not extend these deadlines. These mitigations do not constitute DDoS protection.
+
+Signaling loss before the DataChannel opens fails setup. Afterwards it produces a nonfatal warning and leaves the established P2P channel running, including active transfers. Signaling expiration therefore does not impose a transfer deadline. Actual peer/channel failure, leaving and reloading still end the session. No signaling reconnection or transfer resumption is added.

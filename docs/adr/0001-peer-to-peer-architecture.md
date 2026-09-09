@@ -32,12 +32,12 @@ One language and lockfile simplify setup. Inferred types stay aligned with runti
 
 ## Consequences
 
-Files bypass signaling, but peers and the signaling operator still learn network information. Signaling and app hosting remain trust boundaries; session codes are bearer invitations, not identity verification. Deployments need HTTPS/WSS. Some networks will fail without TURN. The receiver uses RAM, so v0.1 caps files at 128 MiB and discards downloads on session teardown or replacement. Completion verifies sizes and ordering, not content hashes. A server restart ends sessions; scaling across multiple server instances is unsupported.
+Files bypass signaling, but peers and the signaling operator still learn network information. Signaling and app hosting remain trust boundaries; session codes are bearer invitations, not identity verification. Deployments need HTTPS/WSS. Some networks will fail without TURN. The receiver uses RAM, so v0.1 caps files at 128 MiB and discards downloads on session teardown or replacement. Completion verifies sizes and ordering, not content hashes. A server restart drops signaling membership but preserves already open P2P channels; scaling across multiple server instances is unsupported.
 
 ## Alternatives considered
 
 - Server uploads: simpler reachability, but route/store payloads on infrastructure and change the privacy model.
 - Native applications: permit broader filesystem APIs but require installation and a different stack.
-- Manual copy/paste SDP: eliminates signaling hosting but damages the six-character-code experience.
+- Manual copy/paste SDP: eliminates signaling hosting but damages the eight-character-code experience.
 - Socket frameworks or a database-backed server: unnecessary protocol and operational weight for two temporary peers.
 - Custom encryption: adds key-management and verification risks; use browser DTLS and describe its guarantees accurately.

@@ -6,7 +6,7 @@
 
 ## What is PeerBeam?
 
-PeerBeam is a small, open source browser application for sending one file between two devices over a WebRTC DataChannel. Create a session, share a six-character code, connect, and ask the recipient to accept the file. Expand **Connection details** to inspect the actual connection.
+PeerBeam is a small, open source browser application for sending one file between two devices over a WebRTC DataChannel. Create a session, share a eight-character code, connect, and ask the recipient to accept the file. Expand **Connection details** to inspect the actual connection.
 
 This v0.1 is intentionally understandable: no accounts, database, file server, or cloud dependency. It is not an anonymity tool. It uses WebRTC's DTLS transport encryption, not custom end-to-end encryption.
 
@@ -98,6 +98,8 @@ Copy `.env.example` to `.env` **at the repository root** when changing configura
 | `ALLOWED_ORIGINS`    | localhost and 127.0.0.1 on port 5173                | Comma-separated browser origins. An empty value disables this check, only for controlled development. |
 | `VITE_SIGNALING_URL` | Page host on port 8080, ws/wss matching page scheme | Browser signaling address                                                                             |
 | `VITE_STUN_URL`      | Empty                                               | Optional STUN URL, for example `stun:stun.l.google.com:19302`                                         |
+| `WAITING_TTL_MS`     | `600000`                                            | Waiting session/unjoined socket limit, in milliseconds                                                |
+| `ABSOLUTE_TTL_MS`    | `3600000`                                           | Maximum session and socket lifetime, in milliseconds                                                  |
 
 `VITE_` values are public and embedded at build time. Restart Vite after editing them. There are no secrets to configure. A public STUN service is opt-in; its operator sees network-address requests.
 
@@ -116,12 +118,14 @@ npm run format
 npm run format:check
 npm run typecheck
 npm run test
+npx playwright install chromium
+npm run test:e2e
 npm run build
 ```
 
 After building, `npm start -w @peerbeam/signaling-server` runs the compiled server. `npm run preview -w @peerbeam/web -- --port 5173` previews the static app using the default allowed origin. Keep the root workspace dependencies installed for the server. Production TLS, reverse proxies and hardened public hosting are outside this release's scope.
 
-Tests cover protocol validation, sessions and expiry, actual WebSocket relay behavior, file state transitions, chunk boundaries, exact reconstructed payloads, backpressure, interruption, and React interactions. WebRTC browser checks are separate from deterministic CI; see [validation guidance](docs/TESTING.md).
+Tests cover protocol validation, sessions and expiry, actual WebSocket relay behavior, file state transitions, chunk boundaries, exact reconstructed payloads, backpressure, interruption, and React interactions. Two real Chromium E2E tests cover exact downloaded bytes and transfer continuity after signaling shutdown; see [validation guidance](docs/TESTING.md).
 
 ## Security
 
@@ -129,7 +133,7 @@ WebRTC encrypts DataChannels using DTLS. This does **not** provide anonymity or 
 
 The server sees IP addresses, session membership, SDP and ICE network metadata. It has no file storage, binary relay, or file-offer message type. Received names are rendered as React text and sanitized for download; received content is never executed by the app. Downloaded files can still be unsafe when opened elsewhere.
 
-Server limits: 32 KiB per signaling message, 200 messages per socket per 10 seconds, 1,000 sockets, 500 sessions, and bounded outbound buffers. Waiting sessions expire after 10 minutes; connected pairs remain while both sockets answer heartbeat probes. These limits are not comprehensive protection against distributed abuse. See [SECURITY.md](SECURITY.md).
+Server limits: 32 KiB per signaling message, 200 messages per socket per 10 seconds, 1,000 sockets, 500 sessions, and bounded outbound buffers. Five failed joins per connection exhaust a 60-second join window. Waiting sessions expire after 10 minutes; sessions and sockets have an absolute 60-minute lifetime even with responsive peers. Both TTLs are configurable. Signaling loss after DataChannel open shows a warning and preserves the established P2P transfer; actual peer/channel failure still interrupts it. These limits are not comprehensive protection against distributed abuse. See [SECURITY.md](SECURITY.md).
 
 The receiver retains the file in RAM and creates a Blob. The 128 MiB cap is not a guarantee of memory availability on every device. No hash verification, resumability, streaming to disk, or background transfer is implemented.
 

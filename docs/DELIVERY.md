@@ -1,5 +1,7 @@
 # Entrega de PeerBeam v0.1
 
+> Registro histórico de la entrega inicial. Los cambios y validaciones del hardening posterior están en [HARDENING.md](HARDENING.md); sus garantías sustituyen las descripciones originales de códigos y caducidad de este registro.
+
 Proyecto local: `D:\LocalDrop\peerbeam`. Implementación terminada y validada en Windows con Node 22.14.0. No se publicó un repositorio remoto ni se desplegó un servicio público.
 
 ## 1. Arquitectura final

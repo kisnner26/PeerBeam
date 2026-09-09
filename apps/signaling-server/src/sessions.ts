@@ -21,7 +21,7 @@ export interface Session<Peer> {
 type Result<Peer> =
   { ok: true; session: Session<Peer> } | { ok: false; reason: SessionError };
 
-/** Two connected peers keep a session alive; signaling cannot observe file activity. */
+/** Paired peers bypass waiting inactivity expiry, but never the absolute lifetime. */
 export class SessionManager<Peer> {
   private readonly sessions = new Map<string, Session<Peer>>();
   private readonly memberships = new Map<Peer, Session<Peer>>();

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Established P2P sessions survive signaling loss with a nonfatal warning.
+- Eight-character session codes and a five-failed-join/60-second connection budget; six-character clients require a coordinated update.
+- Configurable waiting/absolute lifetimes, bounded idle sockets and capacity checks before WebSocket admission.
+- Transfer race fixes for failed sends, terminal decisions, stale framing, timers, listeners and download cleanup.
+- Two real Chromium E2E scenarios covering exact file bytes and signaling shutdown during transfer.
+
 - English/Spanish interface, including consent, progress, errors and diagnostic labels.
 - Day/night themes with persistent preferences and accessible header controls.
 
