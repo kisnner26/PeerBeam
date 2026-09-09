@@ -17,10 +17,12 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "build": "npm run build --workspaces --if-present"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.62.1",
     "@types/node": "^22.18.0",
     "concurrently": "^9.2.1",
     "eslint": "^10.10.0",
