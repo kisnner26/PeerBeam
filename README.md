@@ -14,9 +14,9 @@ PeerBeam keeps its control plane separate from its data plane. It requires no ac
 
 It does not provide anonymity, verified peer identity, custom end-to-end encryption, or universal network reachability.
 
-## Screenshot
+## logo
 
-<!-- Add product screenshot here: docs/assets/peerbeam-demo.png -->
+![PeerBeam logo](docs/assets/peerbeam-demo.png)
 
 ## Features
 
