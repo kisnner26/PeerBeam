@@ -16,7 +16,7 @@ It does not provide anonymity, verified peer identity, custom end-to-end encrypt
 
 ## logo
 
-![PeerBeam logo](docs/assets/peerbeam-demo.png)
+![PeerBeam logo](docs/assets/peerbeam-logo.png)
 
 ## Features
 
