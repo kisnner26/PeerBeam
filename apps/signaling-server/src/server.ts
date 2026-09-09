@@ -4,8 +4,9 @@ import {
   MAX_SIGNAL_BYTES,
   type ServerMessage,
 } from '@peerbeam/protocol';
-import { SessionManager } from './sessions';
+import { SessionManager, WAITING_TTL_MS, ABSOLUTE_TTL_MS } from './sessions';
 import { JoinLimiter } from './joinLimiter';
+export const MAX_SOCKETS = 1000;
 
 export function createSignalingServer(options: {
   port: number;
@@ -13,13 +14,39 @@ export function createSignalingServer(options: {
   origins?: string[];
   ttlMs?: number;
   now?: () => number;
+  absoluteTtlMs?: number;
+  maxSockets?: number;
+  maxSessions?: number;
+  sweepMs?: number;
 }) {
-  const sessions = new SessionManager<WebSocket>(options.ttlMs);
+  const now = options.now ?? Date.now;
+  const waitingTtl = options.ttlMs ?? WAITING_TTL_MS;
+  const absoluteTtl = options.absoluteTtlMs ?? ABSOLUTE_TTL_MS;
+  for (const value of [
+    waitingTtl,
+    absoluteTtl,
+    options.maxSockets ?? MAX_SOCKETS,
+    options.maxSessions ?? 500,
+    options.sweepMs ?? 30_000,
+  ]) {
+    if (!Number.isSafeInteger(value) || value <= 0)
+      throw new Error('Server limits must be positive safe integers.');
+  }
+  const sessions = new SessionManager<WebSocket>(
+    waitingTtl,
+    now,
+    undefined,
+    absoluteTtl,
+    options.maxSessions,
+  );
   const wss = new WebSocketServer({
     port: options.port,
     host: options.host ?? '127.0.0.1',
     maxPayload: MAX_SIGNAL_BYTES,
     perMessageDeflate: false,
+    verifyClient: ({ origin }: { origin: string }) =>
+      wss.clients.size < (options.maxSockets ?? MAX_SOCKETS) &&
+      (!options.origins?.length || options.origins.includes(origin)),
   });
   const send = (socket: WebSocket, message: ServerMessage) => {
     if (socket.readyState !== WebSocket.OPEN) return;
@@ -30,15 +57,17 @@ export function createSignalingServer(options: {
     socket.send(JSON.stringify(message));
   };
   const alive = new Set<WebSocket>();
-  wss.on('connection', (socket, request) => {
-    if (
-      (options.origins?.length &&
-        !options.origins.includes(request.headers.origin ?? '')) ||
-      wss.clients.size > 1000
-    ) {
-      socket.close(1008, 'Origin or capacity policy');
-      return;
-    }
+  const connectedAt = new Map<WebSocket, number>();
+  const expireSocket = (socket: WebSocket) => {
+    if (socket.readyState !== WebSocket.OPEN) return;
+    send(socket, { type: 'session-error', reason: 'session-expired' });
+    socket.close(1000, 'Signaling lifetime expired');
+    const deadline = setTimeout(() => socket.terminate(), 5000);
+    deadline.unref();
+    socket.once('close', () => clearTimeout(deadline));
+  };
+  wss.on('connection', (socket) => {
+    connectedAt.set(socket, now());
     alive.add(socket);
     socket.on('pong', () => alive.add(socket));
     let windowStart = Date.now();
@@ -124,18 +153,26 @@ export function createSignalingServer(options: {
     socket.on('error', () => socket.terminate());
     socket.on('close', () => {
       alive.delete(socket);
+      connectedAt.delete(socket);
       for (const peer of sessions.leave(socket))
         send(peer, { type: 'peer-disconnected' });
     });
   });
   const sweep = setInterval(() => {
-    for (const peer of sessions.expire())
-      send(peer, { type: 'session-error', reason: 'session-expired' });
+    for (const peer of sessions.expire()) expireSocket(peer);
     for (const socket of wss.clients) {
+      const age = now() - (connectedAt.get(socket) ?? now());
+      if (
+        age >= absoluteTtl ||
+        (!sessions.forPeer(socket) && age >= waitingTtl)
+      ) {
+        expireSocket(socket);
+        continue;
+      }
       if (!alive.delete(socket)) socket.terminate();
       else socket.ping();
     }
-  }, 30_000);
+  }, options.sweepMs ?? 30_000);
   sweep.unref();
   wss.on('close', () => clearInterval(sweep));
   return {

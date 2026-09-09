@@ -1,6 +1,9 @@
 import { randomInt, randomUUID } from 'node:crypto';
 import { CODE_ALPHABET, CODE_LENGTH } from '@peerbeam/shared';
 import type { SessionError } from '@peerbeam/protocol';
+export const WAITING_TTL_MS = 10 * 60_000;
+export const ABSOLUTE_TTL_MS = 60 * 60_000;
+export const MAX_SESSIONS = 500;
 
 export function generateCode(): string {
   return Array.from(
@@ -13,6 +16,7 @@ export interface Session<Peer> {
   code: string;
   peers: Peer[];
   lastActivity: number;
+  createdAt: number;
 }
 type Result<Peer> =
   { ok: true; session: Session<Peer> } | { ok: false; reason: SessionError };
@@ -22,14 +26,17 @@ export class SessionManager<Peer> {
   private readonly sessions = new Map<string, Session<Peer>>();
   private readonly memberships = new Map<Peer, Session<Peer>>();
   constructor(
-    private readonly ttlMs = 10 * 60_000,
+    private readonly ttlMs = WAITING_TTL_MS,
     private readonly now = Date.now,
     private readonly codeFactory = generateCode,
+    private readonly absoluteTtlMs = ABSOLUTE_TTL_MS,
+    private readonly maxSessions = MAX_SESSIONS,
   ) {}
   create(peer: Peer): Result<Peer> {
     if (this.memberships.has(peer))
       return { ok: false, reason: 'already-in-session' };
-    if (this.sessions.size >= 500) return { ok: false, reason: 'server-full' };
+    if (this.sessions.size >= this.maxSessions)
+      return { ok: false, reason: 'server-full' };
     let code = '';
     for (let attempts = 0; attempts < 100; attempts++) {
       const candidate = this.codeFactory();
@@ -44,6 +51,7 @@ export class SessionManager<Peer> {
       code,
       peers: [peer],
       lastActivity: this.now(),
+      createdAt: this.now(),
     };
     this.sessions.set(code, session);
     this.memberships.set(peer, session);
@@ -54,6 +62,8 @@ export class SessionManager<Peer> {
       return { ok: false, reason: 'already-in-session' };
     const session = this.sessions.get(code);
     if (!session) return { ok: false, reason: 'session-not-found' };
+    if (this.isExpired(session))
+      return { ok: false, reason: 'session-expired' };
     if (session.peers.length === 2)
       return { ok: false, reason: 'session-full' };
     if (this.now() - session.lastActivity >= this.ttlMs)
@@ -81,11 +91,7 @@ export class SessionManager<Peer> {
   expire(): Peer[] {
     const expired: Peer[] = [];
     for (const session of this.sessions.values()) {
-      if (
-        session.peers.length === 2 ||
-        this.now() - session.lastActivity < this.ttlMs
-      )
-        continue;
+      if (!this.isExpired(session)) continue;
       for (const peer of session.peers) {
         this.memberships.delete(peer);
         expired.push(peer);
@@ -93,5 +99,12 @@ export class SessionManager<Peer> {
       this.sessions.delete(session.code);
     }
     return expired;
+  }
+  private isExpired(session: Session<Peer>) {
+    return (
+      this.now() - session.createdAt >= this.absoluteTtlMs ||
+      (session.peers.length < 2 &&
+        this.now() - session.lastActivity >= this.ttlMs)
+    );
   }
 }

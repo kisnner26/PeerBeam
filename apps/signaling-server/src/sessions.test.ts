@@ -3,6 +3,46 @@ import { codeSchema } from '@peerbeam/protocol';
 import { generateCode, SessionManager } from './sessions';
 
 describe('session manager', () => {
+  it('bounds absolute lifetime, releases memberships and permits code reuse', () => {
+    let now = 0;
+    const manager = new SessionManager<string>(
+      100,
+      () => now,
+      () => 'ABCDEFGH',
+      1000,
+    );
+    const room = manager.create('a');
+    if (!room.ok) throw new Error('Missing room');
+    manager.join(room.session.code, 'b');
+    now = 100;
+    expect(manager.expire()).toEqual([]);
+    manager.touch(room.session);
+    now = 1000;
+    expect(manager.expire()).toEqual(['a', 'b']);
+    expect(manager.forPeer('a')).toBeUndefined();
+    expect(manager.forPeer('b')).toBeUndefined();
+    expect(manager.leave('a')).toEqual([]);
+    expect(manager.create('c').ok).toBe(true);
+  });
+  it('does not renew absolute lifetime on leave and rejoin', () => {
+    let now = 0;
+    const manager = new SessionManager<string>(100, () => now, undefined, 200);
+    const room = manager.create('a');
+    if (!room.ok) throw new Error('Missing room');
+    manager.join(room.session.code, 'b');
+    now = 150;
+    expect(manager.leave('a')).toEqual(['b']);
+    manager.join(room.session.code, 'c');
+    now = 200;
+    expect(manager.expire()).toEqual(['b', 'c']);
+  });
+  it('accepts exactly 500 sessions and recovers capacity when the last peer leaves', () => {
+    const manager = new SessionManager<number>();
+    for (let i = 0; i < 500; i++) expect(manager.create(i).ok).toBe(true);
+    expect(manager.create(500)).toEqual({ ok: false, reason: 'server-full' });
+    manager.leave(0);
+    expect(manager.create(500).ok).toBe(true);
+  });
   it('generates valid random codes', () => {
     const codes = Array.from({ length: 500 }, generateCode);
     expect(codes.every((code) => codeSchema.safeParse(code).success)).toBe(
@@ -24,17 +64,17 @@ describe('session manager', () => {
       ok: false,
       reason: 'already-in-session',
     });
-    expect(manager.join('ZZZZZZ', 'd')).toEqual({
+    expect(manager.join('ZZZZZZZZ', 'd')).toEqual({
       ok: false,
       reason: 'session-not-found',
     });
   });
   it('retries collisions and bounds exhausted code generation', () => {
-    const codes = ['AAAAAA', 'AAAAAA', 'BBBBBB'];
+    const codes = ['AAAAAAAA', 'AAAAAAAA', 'BBBBBBBB'];
     const manager = new SessionManager<string>(
       100,
       Date.now,
-      () => codes.shift() ?? 'BBBBBB',
+      () => codes.shift() ?? 'BBBBBBBB',
     );
     expect(manager.create('a').ok).toBe(true);
     expect(manager.create('b').ok).toBe(true);
