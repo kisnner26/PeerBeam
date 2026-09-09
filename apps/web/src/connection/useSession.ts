@@ -53,7 +53,7 @@ export function useSession() {
       joinCode === undefined ? undefined : normalizeCode(joinCode);
     if (normalized !== undefined && !codeSchema.safeParse(normalized).success) {
       setError(
-        'Invalid code. Enter 6 letters or numbers, excluding I, O, 0 and 1.',
+        'Invalid code. Enter 8 letters or numbers, excluding I, O, 0 and 1.',
       );
       return;
     }

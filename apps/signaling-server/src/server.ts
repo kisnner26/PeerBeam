@@ -5,12 +5,14 @@ import {
   type ServerMessage,
 } from '@peerbeam/protocol';
 import { SessionManager } from './sessions';
+import { JoinLimiter } from './joinLimiter';
 
 export function createSignalingServer(options: {
   port: number;
   host?: string;
   origins?: string[];
   ttlMs?: number;
+  now?: () => number;
 }) {
   const sessions = new SessionManager<WebSocket>(options.ttlMs);
   const wss = new WebSocketServer({
@@ -41,6 +43,7 @@ export function createSignalingServer(options: {
     socket.on('pong', () => alive.add(socket));
     let windowStart = Date.now();
     let messages = 0;
+    const joins = new JoinLimiter(options.now);
     socket.on('message', (raw, binary) => {
       if (Date.now() - windowStart > 10_000) {
         windowStart = Date.now();
@@ -58,7 +61,17 @@ export function createSignalingServer(options: {
         value = null;
       }
       const parsed = clientMessageSchema.safeParse(value);
+      const joining =
+        typeof value === 'object' &&
+        value !== null &&
+        'type' in value &&
+        value.type === 'join-session';
+      if (joining && joins.blocked) {
+        send(socket, { type: 'session-error', reason: 'rate-limited' });
+        return;
+      }
       if (!parsed.success) {
+        if (joining) joins.fail();
         send(socket, { type: 'session-error', reason: 'invalid-message' });
         return;
       }
@@ -76,6 +89,7 @@ export function createSignalingServer(options: {
             ? sessions.create(socket)
             : sessions.join(message.code, socket);
         if (!result.ok) {
+          if (message.type === 'join-session') joins.fail();
           send(socket, { type: 'session-error', reason: result.reason });
           return;
         }

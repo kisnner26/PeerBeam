@@ -135,8 +135,8 @@ export const spanish: Record<string, string> = {
     'Demasiadas solicitudes. Espera un momento antes de intentarlo de nuevo.',
   'The signaling server is busy. Please try again later.':
     'El servidor de señalización está ocupado. Inténtalo más tarde.',
-  'Invalid code. Enter 6 letters or numbers, excluding I, O, 0 and 1.':
-    'Código no válido. Introduce 6 letras o números, sin I, O, 0 ni 1.',
+  'Invalid code. Enter 8 letters or numbers, excluding I, O, 0 and 1.':
+    'Código no válido. Introduce 8 letras o números, sin I, O, 0 ni 1.',
   'Peer disconnected. Any active transfer was interrupted. Start a new session.':
     'El dispositivo se desconectó. Las transferencias activas se interrumpieron. Inicia una nueva sesión.',
   'Peer setup is unavailable.':

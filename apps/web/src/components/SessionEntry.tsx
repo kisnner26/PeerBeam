@@ -1,6 +1,6 @@
 import { usePreferences } from '../preferences/Preferences';
 import { useState } from 'react';
-import { normalizeCode } from '@peerbeam/shared';
+import { CODE_LENGTH, normalizeCode } from '@peerbeam/shared';
 
 export function SessionEntry({
   onCreate,
@@ -79,19 +79,19 @@ export function SessionEntry({
           <input
             id="session-code"
             className="code-input"
-            placeholder="B7K4Q2"
+            placeholder="B7K4Q2M9"
             value={code}
             onChange={(event) => setCode(normalizeCode(event.target.value))}
             autoComplete="off"
             autoCapitalize="characters"
             spellCheck={false}
-            maxLength={6}
+            maxLength={CODE_LENGTH}
             required
             disabled={busy}
           />
           <button
             className="button primary full"
-            disabled={busy || code.length !== 6}
+            disabled={busy || code.length !== CODE_LENGTH}
           >
             {busy ? t('Connecting…') : t('Connect')}{' '}
             <span aria-hidden="true">↗</span>

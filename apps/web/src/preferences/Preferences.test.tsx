@@ -26,19 +26,19 @@ it('switches both ways without losing the code being entered', async () => {
     </PreferencesProvider>,
   );
   await userEvent.click(screen.getByRole('button', { name: 'Join session' }));
-  await userEvent.type(screen.getByLabelText('Enter session code'), 'B7K4Q2');
+  await userEvent.type(screen.getByLabelText('Enter session code'), 'B7K4Q2M9');
   await userEvent.selectOptions(
     screen.getByRole('combobox', { name: 'Language' }),
     'es',
   );
-  expect(screen.getByLabelText('Código de la sesión')).toHaveValue('B7K4Q2');
+  expect(screen.getByLabelText('Código de la sesión')).toHaveValue('B7K4Q2M9');
   expect(document.documentElement.lang).toBe('es');
   expect(screen.getByRole('button', { name: 'Conectar' })).toBeEnabled();
   await userEvent.selectOptions(
     screen.getByRole('combobox', { name: 'Idioma' }),
     'en',
   );
-  expect(screen.getByLabelText('Enter session code')).toHaveValue('B7K4Q2');
+  expect(screen.getByLabelText('Enter session code')).toHaveValue('B7K4Q2M9');
   expect(document.documentElement.lang).toBe('en');
 });
 it('restores language and theme after remount and can return to night mode', async () => {
