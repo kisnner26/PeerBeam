@@ -1,5 +1,7 @@
 /** English source strings are stable keys; protocol values and filenames are never translated. */
 export const spanish: Record<string, string> = {
+  'Signaling disconnected. Your established P2P connection continues.':
+    'Se perdió la señalización. Tu conexión P2P establecida continúa.',
   'PeerBeam home': 'Inicio de PeerBeam',
   'Open source. Open by design.': 'Código abierto. Transparente por diseño.',
   'DEVICE TO DEVICE. NOTHING IN BETWEEN.*':
@@ -133,8 +135,8 @@ export const spanish: Record<string, string> = {
     'Demasiadas solicitudes. Espera un momento antes de intentarlo de nuevo.',
   'The signaling server is busy. Please try again later.':
     'El servidor de señalización está ocupado. Inténtalo más tarde.',
-  'Invalid code. Enter 6 letters or numbers, excluding I, O, 0 and 1.':
-    'Código no válido. Introduce 6 letras o números, sin I, O, 0 ni 1.',
+  'Invalid code. Enter 8 letters or numbers, excluding I, O, 0 and 1.':
+    'Código no válido. Introduce 8 letras o números, sin I, O, 0 ni 1.',
   'Peer disconnected. Any active transfer was interrupted. Start a new session.':
     'El dispositivo se desconectó. Las transferencias activas se interrumpieron. Inicia una nueva sesión.',
   'Peer setup is unavailable.':
@@ -175,6 +177,8 @@ export const spanish: Record<string, string> = {
   'Invalid transfer data. The connection was closed.':
     'Datos de transferencia no válidos. La conexión se cerró.',
   'Transfer interrupted.': 'Transferencia interrumpida.',
+  'Transfer interrupted: data could not be sent.':
+    'Transferencia interrumpida: no se pudieron enviar los datos.',
   'The other device reported a transfer error.':
     'El otro dispositivo informó un error de transferencia.',
   'Source file unavailable.': 'El archivo de origen no está disponible.',

@@ -10,6 +10,7 @@ export class SignalingClient {
   private socket?: WebSocket;
   private heartbeat?: ReturnType<typeof setInterval>;
   private disposed = false;
+  private cancelConnect?: () => void;
   constructor(
     private readonly onMessage: (message: ServerMessage) => void,
     private readonly onError: (message: string) => void,
@@ -40,30 +41,36 @@ export class SignalingClient {
         );
     };
     await new Promise<void>((resolve, reject) => {
+      const cleanup = () => {
+        clearTimeout(timer);
+        socket.removeEventListener('close', closed);
+        this.cancelConnect = undefined;
+      };
+      const closed = () => {
+        cleanup();
+        reject(new Error('WebSocket disconnected.'));
+      };
       const timer = setTimeout(() => {
+        cleanup();
         reject(new Error('Signaling connection timed out.'));
         socket.close();
       }, 10_000);
       socket.onopen = () => {
-        clearTimeout(timer);
+        cleanup();
         resolve();
       };
       socket.onerror = () => {
-        clearTimeout(timer);
+        cleanup();
+        if (socket.readyState === WebSocket.OPEN)
+          this.onError('WebSocket disconnected.');
         reject(
           new Error(
             'Cannot reach the signaling server. Check its address and try again.',
           ),
         );
       };
-      socket.addEventListener(
-        'close',
-        () => {
-          clearTimeout(timer);
-          reject(new Error('WebSocket disconnected.'));
-        },
-        { once: true },
-      );
+      this.cancelConnect = closed;
+      socket.addEventListener('close', closed, { once: true });
     });
     if (this.disposed) throw new Error('Session closed.');
     this.heartbeat = setInterval(() => {
@@ -78,6 +85,13 @@ export class SignalingClient {
   close() {
     this.disposed = true;
     clearInterval(this.heartbeat);
+    this.cancelConnect?.();
+    if (this.socket) {
+      this.socket.onopen = null;
+      this.socket.onclose = null;
+      this.socket.onerror = null;
+      this.socket.onmessage = null;
+    }
     this.socket?.close();
   }
 }

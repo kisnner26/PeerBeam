@@ -20,10 +20,11 @@ export class TransferManager {
   private source?: File;
   private parts: ArrayBuffer[] = [];
   private meta?: Extract<FileMessage, { type: 'chunk-meta' }>;
-  private discardBinary = false;
-  private readonly retired = new Set<string>();
+  private discardSize?: number;
+  private readonly retired = new Map<string, TransferStatus>();
   private abort = new AbortController();
   private timer?: ReturnType<typeof setTimeout>;
+  private timerVersion = 0;
   private startedAt = 0;
   private disposed = false;
   constructor(
@@ -34,11 +35,14 @@ export class TransferManager {
   ) {
     channel.addEventListener('message', this.onMessage);
     channel.addEventListener('close', this.onClose);
+    channel.addEventListener('error', this.onClose);
   }
   get busy() {
     return !!this.current && isActive(this.current.status);
   }
   offer(file: File) {
+    if (this.disposed || this.channel.readyState !== 'open')
+      throw new Error('Data channel is not open.');
     if (this.busy)
       throw new Error('Finish or cancel the current transfer first.');
     const chunkSize = Math.min(CHUNK_SIZE, this.maxMessageSize || CHUNK_SIZE);
@@ -65,7 +69,7 @@ export class TransferManager {
       chunks: 0,
       speed: 0,
     };
-    this.send({
+    this.sendActive({
       type: 'file-offer',
       transferId: this.current.id,
       file: metadata.data,
@@ -78,7 +82,7 @@ export class TransferManager {
     if (!state || state.direction !== 'receive' || state.status !== 'offered')
       return;
     this.setStatus('accepted');
-    this.send({ type: 'file-accept', transferId: state.id });
+    this.sendActive({ type: 'file-accept', transferId: state.id });
     this.arm();
   }
   reject() {
@@ -87,13 +91,31 @@ export class TransferManager {
       this.current.status !== 'offered'
     )
       return;
-    this.send({ type: 'file-reject', transferId: this.current.id });
+    const transferId = this.current.id;
     this.finish('rejected');
+    this.notify({ type: 'file-reject', transferId });
   }
   cancel() {
     if (!this.busy || !this.current) return;
-    this.send({ type: 'transfer-cancel', transferId: this.current.id });
+    const transferId = this.current.id;
     this.finish('cancelled');
+    this.notify({ type: 'transfer-cancel', transferId });
+  }
+  // Active operations fail locally if send throws; terminal notifications cannot
+  // undo a terminal decision or prevent cleanup.
+  private sendActive(message: FileMessage) {
+    try {
+      this.send(message);
+    } catch {
+      this.fail('Transfer interrupted: data could not be sent.', false);
+    }
+  }
+  private notify(message: FileMessage) {
+    try {
+      this.send(message);
+    } catch {
+      /* Local terminal state is authoritative. */
+    }
   }
   private send(message: FileMessage) {
     if (this.channel.readyState !== 'open')
@@ -116,6 +138,8 @@ export class TransferManager {
     }
   };
   private handle(message: FileMessage) {
+    if (this.meta || this.discardSize !== undefined)
+      throw new Error('Binary chunk must immediately follow its metadata.');
     if (message.type === 'file-offer') {
       if (this.busy || this.retired.has(message.transferId)) {
         this.send({ type: 'file-reject', transferId: message.transferId });
@@ -136,7 +160,14 @@ export class TransferManager {
       return;
     }
     if (this.retired.has(message.transferId)) {
-      if (message.type === 'chunk-meta') this.discardBinary = true;
+      const terminal = this.retired.get(message.transferId);
+      if (
+        terminal === 'complete' &&
+        message.type !== 'transfer-cancel' &&
+        message.type !== 'transfer-error'
+      )
+        throw new Error('Duplicate completed transfer data.');
+      if (message.type === 'chunk-meta') this.discardSize = message.size;
       return;
     }
     const state = this.current;
@@ -218,6 +249,7 @@ export class TransferManager {
     const signal = this.abort.signal;
     if (!state || !file) throw new Error('Source file unavailable.');
     this.send({ type: 'transfer-start', transferId: state.id });
+    signal.throwIfAborted();
     this.startedAt = performance.now();
     this.setStatus('transferring');
     for (let index = 0; index < state.file.totalChunks; index++) {
@@ -233,7 +265,9 @@ export class TransferManager {
         index,
         size: bytes.byteLength,
       });
+      signal.throwIfAborted();
       this.channel.send(bytes);
+      signal.throwIfAborted();
       state.bytes += bytes.byteLength;
       state.chunks++;
       this.measure();
@@ -241,17 +275,19 @@ export class TransferManager {
     }
     await waitForBufferLow(this.channel, signal);
     signal.throwIfAborted();
+    this.setStatus('awaiting-ack');
     this.send({
       type: 'transfer-complete',
       transferId: state.id,
       phase: 'sent',
     });
-    this.setStatus('awaiting-ack');
     this.arm();
   }
   private receiveChunk(bytes: ArrayBuffer) {
-    if (this.discardBinary) {
-      this.discardBinary = false;
+    if (this.discardSize !== undefined) {
+      if (bytes.byteLength !== this.discardSize)
+        throw new Error('Invalid retired binary chunk.');
+      this.discardSize = undefined;
       return;
     }
     const state = this.current;
@@ -287,35 +323,44 @@ export class TransferManager {
   }
   private arm(ms = 30_000) {
     clearTimeout(this.timer);
-    this.timer = setTimeout(
-      () => this.fail('Transfer timed out. Try sending the file again.'),
-      ms,
-    );
+    const version = ++this.timerVersion;
+    if (!this.busy || this.disposed) return;
+    this.timer = setTimeout(() => {
+      if (version === this.timerVersion && this.busy && !this.disposed)
+        this.fail('Transfer timed out. Try sending the file again.');
+    }, ms);
   }
   private finish(status: TransferStatus) {
+    if (!this.busy || this.disposed) return;
     clearTimeout(this.timer);
+    this.timerVersion++;
     this.abort.abort();
     this.parts = [];
     this.source = undefined;
-    if (this.meta) this.discardBinary = true;
+    if (this.meta) this.discardSize = this.meta.size;
     this.meta = undefined;
     if (this.current) {
-      this.retired.add(this.current.id);
+      if (status !== 'complete' && this.current.downloadUrl) {
+        URL.revokeObjectURL(this.current.downloadUrl);
+        delete this.current.downloadUrl;
+      }
+      this.retired.set(this.current.id, status);
       if (this.retired.size > 16)
-        this.retired.delete(this.retired.values().next().value!);
+        this.retired.delete(this.retired.keys().next().value!);
       this.setStatus(status);
     }
   }
   private fail(message: string, notify = true) {
     if (this.busy && this.current) {
-      if (notify && this.channel.readyState === 'open')
-        this.send({
-          type: 'transfer-error',
-          transferId: this.current.id,
-          message: message.slice(0, 200),
-        });
+      const transferId = this.current.id;
       this.current.error = message;
       this.finish('error');
+      if (notify && this.channel.readyState === 'open')
+        this.notify({
+          type: 'transfer-error',
+          transferId,
+          message: message.slice(0, 200),
+        });
     }
     if (!this.disposed) this.onError(message);
   }
@@ -330,11 +375,17 @@ export class TransferManager {
     this.parts = [];
     this.meta = undefined;
     clearTimeout(this.timer);
+    this.timerVersion++;
   }
   dispose() {
     this.disposed = true;
     this.clearPrevious();
+    this.source = undefined;
+    this.current = undefined;
+    this.discardSize = undefined;
+    this.retired.clear();
     this.channel.removeEventListener('message', this.onMessage);
     this.channel.removeEventListener('close', this.onClose);
+    this.channel.removeEventListener('error', this.onClose);
   }
 }

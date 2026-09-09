@@ -3,7 +3,7 @@ import { clientMessageSchema, serverMessageSchema } from './index';
 
 it('validates discriminated signaling messages and rejects unknown properties', () => {
   expect(
-    clientMessageSchema.safeParse({ type: 'join-session', code: 'B7K4Q2' })
+    clientMessageSchema.safeParse({ type: 'join-session', code: 'B7K4Q2M9' })
       .success,
   ).toBe(true);
   for (const message of [

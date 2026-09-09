@@ -10,7 +10,11 @@ Server messages: `session-created`, `session-joined`, `peer-ready`, `offer`, `an
 
 Messages are WebSocket text frames capped at 32 KiB (SDP at 24 KiB). Binary frames and file messages are rejected. Peers cannot specify a target session when relaying: membership determines the sole recipient. The first member is the offerer, avoiding simultaneous SDP offers. The client serializes async signaling work and queues ICE received before the remote description.
 
-Codes use six characters from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`, generated with Node crypto `randomInt`; IDs use `randomUUID`. Collisions are retried up to 100 times. Creating or joining while already a member is rejected. Membership and codes exist only in RAM. Empty sessions are deleted immediately, single-peer sessions after 10 minutes of inactivity (swept every 30 seconds). Two responsive peers are active because the server cannot observe P2P file activity. Ping/pong does not renew a waiting code.
+Codes use eight characters from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`, generated with Node crypto `randomInt`; IDs use `randomUUID`. Collisions are retried up to 100 times. Creating or joining while already a member is rejected. Membership and codes exist only in RAM. Empty sessions are deleted immediately, single-peer sessions after 10 minutes of inactivity (swept every 30 seconds). Two responsive peers are exempt from waiting inactivity expiry, but every session expires 60 minutes after creation. Ping/pong does not renew either deadline. `WAITING_TTL_MS` and `ABSOLUTE_TTL_MS` configure these values. Expiry removes memberships, sends `session-expired` and closes sockets (forced after 5 seconds). Unjoined sockets expire by the waiting TTL; all sockets have an absolute lifetime measured from connection.
+
+Five failed joins per connection per 60-second window exhaust the join budget; subsequent joins return `rate-limited`. Invalid join schemas count. Other operations retain their general message budget. Admission permits at most 500 sessions and 1,000 sockets. See SECURITY.md for proxy recommendations and limitations.
+
+Six-character clients are incompatible with the new code schema. Deploy the matching web and signaling versions together and recreate old waiting sessions. The file-channel wire format is unchanged.
 
 ## File channel
 
@@ -35,7 +39,9 @@ Each binary message must immediately follow its metadata and have the declared l
 
 The sender checks `bufferedAmount` before each chunk. Above 1 MiB it waits for `bufferedamountlow` at 256 KiB. The queue may exceed the high watermark by one chunk plus its control message. Waits stop on cancellation, channel close, error or a 30-second stall. Chunks are read with `File.slice().arrayBuffer()`, not by loading the entire file.
 
-Both peers can send `transfer-cancel` or `transfer-error`. Rejected, cancelled and finished transfers are terminal; IDs are briefly retained to discard already queued chunks safely. Simultaneous file offers are rejected as busy. Only one active file exists per connection. Offer consent times out after 120 seconds; active transfer inactivity after 30 seconds. Protocol violations close the data channel. Reloading, leaving or losing signaling ends the session and active transfer; reconnect/resume is deliberately absent.
+Both peers can send `transfer-cancel` or `transfer-error`. Terminal decisions never change after notification failure. The last 16 terminal IDs are retained: queued data for cancelled/rejected/error transfers can be discarded only as adjacent metadata/binary pairs of matching size. Control messages cannot interrupt such pairs. Duplicate completion or chunk metadata after success is a protocol violation; late cancellation/error cannot undo success. Simultaneous file offers are rejected as busy. Only one active file exists per connection. Offer consent times out after 120 seconds; active transfer inactivity after 30 seconds. Timer generations prevent old callbacks from failing new transfers. Failed acknowledgement sends revoke any newly created download URL. Protocol violations close the data channel.
+
+Signaling loss before DataChannel open fails setup. After open, it leaves the established PeerConnection, DataChannel and active transfer running with a warning. Reloading, leaving or actual data-plane failure ends the session; signaling reconnect and transfer resume are deliberately absent.
 
 ## Diagnostics
 

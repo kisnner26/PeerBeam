@@ -38,9 +38,9 @@ it('joins with a normalized code and disables incomplete input', async () => {
   render(<SessionEntry onCreate={vi.fn()} onJoin={onJoin} busy={false} />);
   await userEvent.click(screen.getByRole('button', { name: 'Join session' }));
   expect(screen.getByRole('button', { name: /Connect/ })).toBeDisabled();
-  await userEvent.type(screen.getByLabelText('Enter session code'), 'b7k4q2');
+  await userEvent.type(screen.getByLabelText('Enter session code'), 'b7k4q2m9');
   await userEvent.click(screen.getByRole('button', { name: /Connect/ }));
-  expect(onJoin).toHaveBeenCalledWith('B7K4Q2');
+  expect(onJoin).toHaveBeenCalledWith('B7K4Q2M9');
 });
 it('requires explicit acceptance, focuses the action and renders file names as text', async () => {
   const accept = vi.fn();

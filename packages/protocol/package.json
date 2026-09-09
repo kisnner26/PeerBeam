@@ -5,6 +5,7 @@
   "type": "module",
   "exports": "./src/index.ts",
   "dependencies": {
+    "@peerbeam/shared": "0.1.0",
     "zod": "^4.1.12"
   }
 }

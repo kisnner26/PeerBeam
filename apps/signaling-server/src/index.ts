@@ -2,6 +2,7 @@ import { config } from 'dotenv';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import { createSignalingServer } from './server';
+import { WAITING_TTL_MS, ABSOLUTE_TTL_MS } from './sessions';
 
 config({
   path: fileURLToPath(new URL('../../../.env', import.meta.url)),
@@ -11,6 +12,18 @@ const env = z
   .object({
     PORT: z.coerce.number().int().min(1).max(65535).default(8080),
     HOST: z.string().default('127.0.0.1'),
+    WAITING_TTL_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .safe()
+      .default(WAITING_TTL_MS),
+    ABSOLUTE_TTL_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .safe()
+      .default(ABSOLUTE_TTL_MS),
     ALLOWED_ORIGINS: z
       .string()
       .default('http://localhost:5173,http://127.0.0.1:5173'),
@@ -19,6 +32,8 @@ const env = z
 const server = createSignalingServer({
   port: env.PORT,
   host: env.HOST,
+  ttlMs: env.WAITING_TTL_MS,
+  absoluteTtlMs: env.ABSOLUTE_TTL_MS,
   origins: env.ALLOWED_ORIGINS.split(',')
     .map((origin) => origin.trim())
     .filter(Boolean),

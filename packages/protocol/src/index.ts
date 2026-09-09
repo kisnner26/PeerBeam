@@ -1,8 +1,11 @@
 import { z } from 'zod';
+import { CODE_ALPHABET, CODE_LENGTH } from '@peerbeam/shared';
 export * from './file';
 
 export const MAX_SIGNAL_BYTES = 32 * 1024;
-export const codeSchema = z.string().regex(/^[A-HJ-NP-Z2-9]{6}$/);
+export const codeSchema = z
+  .string()
+  .regex(new RegExp(`^[${CODE_ALPHABET}]{${CODE_LENGTH}}$`));
 const sdp = z
   .string()
   .min(1)

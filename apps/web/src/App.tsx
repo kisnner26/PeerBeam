@@ -132,6 +132,11 @@ export function App() {
               <span role="status">{statusLabel}</span>
               <span className="session-label">{t('01 / CONNECT')}</span>
             </div>
+            {session.warning && (
+              <p role="status" className="fine-print">
+                {t(session.warning)}
+              </p>
+            )}
             {(session.error || files.error || localError) && (
               <div className="error-banner" role="alert">
                 {t(session.error || files.error || localError)}
