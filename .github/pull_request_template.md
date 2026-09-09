@@ -1,14 +1,27 @@
-## Change
+## What does this PR do?
 
-Describe the problem and resulting behavior. Link the related issue.
+Describe the resulting behavior and scope. Link the related issue.
 
-## Validation
+## Why?
+
+Explain the concrete problem this solves.
+
+## Testing
 
 - [ ] `npm run lint`
 - [ ] `npm run format:check`
 - [ ] `npm run typecheck`
 - [ ] `npm run test`
 - [ ] `npm run build`
-- [ ] Relevant docs updated
+- [ ] `npm run test:e2e` (when relevant)
 
-For UI changes, attach screenshots. For transfer changes, explain consent, interruption and malformed-data checks. List browser/network checks and any remaining limitations.
+List any omitted or failing checks and explain why.
+
+## Security / protocol impact
+
+- [ ] No protocol or security changes
+- [ ] Protocol or security changes are documented and tested
+
+## Screenshots
+
+Required for visible UI changes. Not required for backend or documentation-only changes.
