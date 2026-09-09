@@ -26,6 +26,7 @@ export function useSession() {
   >('idle');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
+  const [warning, setWarning] = useState('');
   const [channel, setChannel] = useState<RTCDataChannel>();
   const [details, setDetails] = useState(emptyDetails);
   const signalRef = useRef<SignalingClient | null>(null);
@@ -43,6 +44,7 @@ export function useSession() {
     setChannel(undefined);
     setCode('');
     setError('');
+    setWarning('');
     setDetails(emptyDetails);
     setStatus('idle');
   }
@@ -57,6 +59,7 @@ export function useSession() {
     }
     reset();
     const current = generation.current;
+    let establishedChannel: RTCDataChannel | undefined;
     setStatus('connecting');
     const fail = (message: string) => {
       if (generation.current !== current) return;
@@ -72,6 +75,17 @@ export function useSession() {
       setStatus('error');
     };
     let queue = Promise.resolve();
+    const signalingFailed = (message: string) => {
+      if (generation.current !== current) return;
+      if (establishedChannel?.readyState !== 'open') {
+        fail(message);
+        return;
+      }
+      signalRef.current?.close();
+      setWarning(
+        'Signaling disconnected. Your established P2P connection continues.',
+      );
+    };
     const handle = async (message: ServerMessage) => {
       if (generation.current !== current) return;
       switch (message.type) {
@@ -81,10 +95,10 @@ export function useSession() {
           setStatus('waiting');
           break;
         case 'session-error':
-          fail(errors[message.reason]);
+          signalingFailed(errors[message.reason]);
           break;
         case 'peer-disconnected':
-          fail(
+          signalingFailed(
             'Peer disconnected. Any active transfer was interrupted. Start a new session.',
           );
           break;
@@ -92,11 +106,19 @@ export function useSession() {
           setStatus('negotiating');
           const peer = new PeerConnectionManager(
             (signal) => {
-              if (generation.current === current)
-                signalRef.current?.send(signal);
+              if (generation.current === current) {
+                try {
+                  signalRef.current?.send(signal);
+                } catch {
+                  signalingFailed(
+                    'Signaling disconnected during connection setup.',
+                  );
+                }
+              }
             },
             (opened) => {
               if (generation.current === current) {
+                establishedChannel = opened;
                 setChannel(opened);
                 setStatus('connected');
               }
@@ -127,7 +149,7 @@ export function useSession() {
               : 'WebRTC connection failed.',
           ),
         );
-    }, fail);
+    }, signalingFailed);
     signalRef.current = signaling;
     try {
       await signaling.connect();
@@ -177,6 +199,7 @@ export function useSession() {
     status,
     code,
     error,
+    warning,
     channel,
     details,
     start,

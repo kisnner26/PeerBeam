@@ -1,5 +1,7 @@
 /** English source strings are stable keys; protocol values and filenames are never translated. */
 export const spanish: Record<string, string> = {
+  'Signaling disconnected. Your established P2P connection continues.':
+    'Se perdió la señalización. Tu conexión P2P establecida continúa.',
   'PeerBeam home': 'Inicio de PeerBeam',
   'Open source. Open by design.': 'Código abierto. Transparente por diseño.',
   'DEVICE TO DEVICE. NOTHING IN BETWEEN.*':

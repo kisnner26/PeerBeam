@@ -181,6 +181,14 @@ export class PeerConnectionManager {
     this.disposed = true;
     clearTimeout(this.timeout);
     clearTimeout(this.disconnectTimeout);
+    this.pc.onicecandidate = null;
+    this.pc.ondatachannel = null;
+    this.pc.onconnectionstatechange = null;
+    if (this.channel) {
+      this.channel.onopen = null;
+      this.channel.onclose = null;
+      this.channel.onerror = null;
+    }
     this.channel?.close();
     this.pc.close();
     this.pendingIce = [];
