@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Optional `docker compose up` development workflow alongside the native `npm run dev`; see docs/DOCKER.md.
 - Professional OSS onboarding, contribution templates, and a public issue roadmap.
 
 - Established P2P sessions survive signaling loss with a nonfatal warning.

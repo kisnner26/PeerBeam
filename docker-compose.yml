@@ -1,0 +1,45 @@
+# Development-only Compose file. See docs/DOCKER.md for usage, and the root
+# README/CONTRIBUTING for the native `npm run dev` workflow this does not
+# replace. Reads the same optional root `.env` used by the native workflow;
+# ports and the signaling URL default to the same values documented there.
+services:
+  signaling:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    working_dir: /app
+    # Installs into the named volume below only when it is empty (first run,
+    # or after `docker compose down -v`), then starts the same watch script
+    # `npm run dev` uses natively.
+    command: >
+      sh -c "[ -d node_modules/@peerbeam ] || npm ci; cd apps/signaling-server && npx tsx watch src/index.ts"
+    environment:
+      # The app defaults to 127.0.0.1, which is unreachable from outside its
+      # own container. Everything else (PORT, ALLOWED_ORIGINS, the TTLs) is
+      # left to the app's own defaults / the mounted root .env, unchanged
+      # from the native workflow.
+      - HOST=0.0.0.0
+    ports:
+      - '${PORT:-8080}:${PORT:-8080}'
+    volumes:
+      - .:/app
+      - signaling_node_modules:/app/node_modules
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    working_dir: /app
+    command: >
+      sh -c "[ -d node_modules/@peerbeam ] || npm ci; cd apps/web && npx vite --host 0.0.0.0"
+    ports:
+      - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
+    volumes:
+      - .:/app
+      - web_node_modules:/app/node_modules
+    depends_on:
+      - signaling
+
+volumes:
+  signaling_node_modules:
+  web_node_modules:

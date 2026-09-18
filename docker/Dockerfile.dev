@@ -1,0 +1,10 @@
+# Development-only image shared by both the web and signaling-server
+# Compose services. It only prepares the workspace; the actual source is
+# provided by the bind mount configured in docker-compose.yml, and
+# dependencies are installed at container start (see docs/DOCKER.md) so a
+# fresh named volume gets populated automatically.
+FROM node:22.14-slim
+
+WORKDIR /app
+
+CMD ["sh", "-c", "echo 'set a command: in docker-compose.yml' && exit 1"]

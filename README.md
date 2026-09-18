@@ -67,6 +67,8 @@ Open the web app in two browser contexts. Choose **Create session** in one, choo
 
 For two physical devices, use trusted HTTPS/WSS and reachable addresses; `localhost` on a phone refers to the phone. Some NAT and enterprise networks cannot connect without TURN.
 
+Prefer not to install Node locally? See [docs/DOCKER.md](docs/DOCKER.md) for an equivalent `docker compose up` workflow.
+
 ## Testing
 
 ```sh
